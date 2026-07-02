@@ -36,7 +36,12 @@ export function ManagePage() {
   const [expandedBrands, setExpandedBrands] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    if (initialized || !services.length || !sizes.length || !brands.length || !shop) return
+    if (initialized) return
+    // Wait until every reference query has finished loading. brands can be
+    // legitimately empty on a fresh shop (the owner creates them on this very
+    // page), so gate on the load flags — not on data length — or the page
+    // would spin forever with no brands seeded.
+    if (loadSizes || loadServices || loadPrices || loadBrands || loadConfig) return
 
     // Init prices draft
     const priceDraft: Record<string, Record<string, string>> = {}
@@ -63,11 +68,11 @@ export function ManagePage() {
     )
 
     // Init shop config draft
-    setShopName(shop.shop_name)
-    setPromptpayId(shop.promptpay_id)
+    setShopName(shop?.shop_name ?? '')
+    setPromptpayId(shop?.promptpay_id ?? '')
 
     setInitialized(true)
-  }, [services, sizes, priceMap, brands, shop, initialized])
+  }, [loadSizes, loadServices, loadPrices, loadBrands, loadConfig, services, sizes, priceMap, brands, shop, initialized])
 
   if (loadSizes || loadServices || loadPrices || loadBrands || loadConfig || !initialized) {
     return <FullPageSpinner />
