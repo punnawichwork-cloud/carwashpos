@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { JobStatus, PaymentMethod } from '@/lib/database.types'
 import {
   createJob,
-  getMyTodayJobs,
+  getTodayJobs,
   markPaid,
   updateJobServices,
   updateJobStatus,
@@ -10,8 +10,8 @@ import {
   type CreateJobLine,
 } from './jobs.service'
 
-export function useMyTodayJobs() {
-  return useQuery({ queryKey: ['jobs', 'today', 'mine'], queryFn: getMyTodayJobs })
+export function useTodayJobs() {
+  return useQuery({ queryKey: ['jobs', 'today'], queryFn: getTodayJobs })
 }
 
 function useInvalidateJobs() {

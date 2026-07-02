@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useShopConfig } from '@/features/reference/reference.hooks'
-import { useMyTodayJobs } from '@/features/jobs/jobs.hooks'
+import { useTodayJobs } from '@/features/jobs/jobs.hooks'
 import { isOpenJob } from '@/features/jobs/MyJobsPage'
 import { useJobsRealtime } from '@/features/jobs/useJobsRealtime'
 import { cn } from '@/lib/utils'
@@ -26,13 +26,13 @@ export function StaffShell() {
   useJobsRealtime()
   const { profile, role, signOut } = useAuth()
   const { data: shop } = useShopConfig()
-  const { data: jobs = [] } = useMyTodayJobs()
+  const { data: jobs = [] } = useTodayJobs()
   const location = useLocation()
 
   const openCount = jobs.filter(isOpenJob).length
   const staffName = profile?.full_name || 'พนักงาน'
   const initial = staffName.charAt(0)
-  const title = location.pathname.startsWith('/jobs') ? 'งานของฉันวันนี้' : 'เปิดงานใหม่'
+  const title = location.pathname.startsWith('/jobs') ? 'คิวงานวันนี้' : 'เปิดงานใหม่'
 
   const tabClass = (active: boolean) =>
     cn(
@@ -108,7 +108,7 @@ export function StaffShell() {
         </NavLink>
         <NavLink to="/jobs" className={({ isActive }) => tabClass(isActive)}>
           <TabIcon kind="jobs" />
-          <span className="font-kanit text-[11.5px] font-semibold">งานของฉัน</span>
+          <span className="font-kanit text-[11.5px] font-semibold">คิวงาน</span>
           {openCount > 0 && (
             <span className="font-kanit absolute right-6 top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-rose-400 px-1 text-[10px] font-bold text-white">
               {openCount}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useMyTodayJobs, useMarkPaid, useUpdateJobServices, useUpdateJobStatus } from './jobs.hooks'
+import { useTodayJobs, useMarkPaid, useUpdateJobServices, useUpdateJobStatus } from './jobs.hooks'
 import { usePriceMatrix, useServices, useShopConfig } from '@/features/reference/reference.hooks'
 import { JobCard } from './JobCard'
 import { QrSheet } from './QrSheet'
@@ -16,7 +16,7 @@ export function isOpenJob(j: JobWithServices): boolean {
 
 export function MyJobsPage() {
   const toast = useToast()
-  const { data: jobs = [], isLoading } = useMyTodayJobs()
+  const { data: jobs = [], isLoading } = useTodayJobs()
   const { data: services = [] } = useServices(true)
   const { data: priceMap = {} } = usePriceMatrix()
   const { data: shop = null } = useShopConfig()
@@ -55,7 +55,7 @@ export function MyJobsPage() {
       {openJobs.length === 0 ? (
         <div className="py-12 text-center text-slate-400">
           <div className="mb-2 text-[44px]">🫧</div>
-          <div className="font-kanit text-[15px] font-semibold text-slate-500">ยังไม่มีงานวันนี้</div>
+          <div className="font-kanit text-[15px] font-semibold text-slate-500">ยังไม่มีงานในคิวตอนนี้</div>
           <div className="mt-1 text-[12.5px]">แตะ “เปิดงาน” เพื่อเริ่มรับรถคันแรก</div>
         </div>
       ) : (

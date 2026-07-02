@@ -40,7 +40,9 @@ export async function createJob(header: CreateJobHeader, lines: CreateJobLine[])
   return data as number
 }
 
-export async function getMyTodayJobs(): Promise<JobWithServices[]> {
+// Shared queue: RLS returns every staff's still-in-queue job (open/in_progress/done)
+// plus the caller's own jobs. Owner gets everything.
+export async function getTodayJobs(): Promise<JobWithServices[]> {
   const { fromISO, toISO } = todayRange()
   const { data, error } = await supabase
     .from('jobs')
