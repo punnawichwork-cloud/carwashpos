@@ -1,0 +1,9 @@
+{
+  "name": "POS Carwash",
+  "short_name": "POS",
+  "display": "standalone",
+  "background_color": "#EFF6FF",
+  "theme_color": "#0EA5E9",
+  "start_url": "/",
+  "icons": []
+}
