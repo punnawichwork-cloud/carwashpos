@@ -155,7 +155,7 @@ export function ExportPage() {
       <div className="rounded-[20px] border border-slate-100 bg-white p-6 shadow-card">
         <div className="font-kanit mb-4 text-lg font-bold text-slate-900">เลือกช่วงวันที่ต้องการ</div>
         <div className="flex flex-wrap items-end gap-4">
-          <div className="min-w-0 flex-1 lg:min-w-[200px]">
+          <div className="min-w-[140px] flex-1 lg:min-w-[200px]">
             <label className="font-kanit mb-1.5 block text-sm font-semibold text-slate-700">
               ตั้งแต่วันที่
             </label>
@@ -166,7 +166,7 @@ export function ExportPage() {
               className="font-kanit w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 py-2 text-sm outline-none focus:border-sky focus:bg-white"
             />
           </div>
-          <div className="min-w-0 flex-1 lg:min-w-[200px]">
+          <div className="min-w-[140px] flex-1 lg:min-w-[200px]">
             <label className="font-kanit mb-1.5 block text-sm font-semibold text-slate-700">
               ถึงวันที่
             </label>
