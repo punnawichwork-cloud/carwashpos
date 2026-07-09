@@ -428,7 +428,7 @@ export function ManagePage() {
           <div className="text-[12.5px] text-slate-400">ข้อมูลที่แสดงในหน้ารับเงินและสร้าง QR Code</div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="font-kanit mb-1.5 block text-sm font-semibold text-slate-700">ชื่อร้าน</label>
             <input

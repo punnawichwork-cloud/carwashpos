@@ -21,7 +21,8 @@ export function PriceMatrixEditor({ services, sizes, prices, onChange }: Props) 
         ราคาคิดจาก <b className="text-sky">บริการ × ขนาดรถ</b> — พนักงานเห็นราคานี้ตอนเปิดงานทันที
       </div>
 
-      <div className="grid items-center gap-2.5" style={{ gridTemplateColumns: cols }}>
+      <div className="overflow-x-auto">
+      <div className="grid min-w-[600px] items-center gap-2.5" style={{ gridTemplateColumns: cols }}>
         <div className="font-kanit pl-1 text-[12.5px] font-semibold text-slate-400">บริการ \ ขนาด</div>
         {sizes.map((s) => {
           const { fg } = sizeBadge(s.code)
@@ -37,7 +38,7 @@ export function PriceMatrixEditor({ services, sizes, prices, onChange }: Props) 
       </div>
 
       <div className="mt-2.5 max-h-[320px] overflow-y-auto pr-1">
-        <div className="grid items-center gap-2.5" style={{ gridTemplateColumns: cols }}>
+        <div className="grid min-w-[600px] items-center gap-2.5" style={{ gridTemplateColumns: cols }}>
           {services.map((svc, i) => (
             <FragmentRow
               key={svc.id}
@@ -49,6 +50,7 @@ export function PriceMatrixEditor({ services, sizes, prices, onChange }: Props) 
             />
           ))}
         </div>
+      </div>
       </div>
     </div>
   )

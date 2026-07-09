@@ -100,7 +100,7 @@ export function DashboardPage() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         {kpiCards.map((k) => (
           <Card key={k.label} className="p-5">
             <div className="flex items-center justify-between">
@@ -122,7 +122,7 @@ export function DashboardPage() {
       </div>
 
       {/* revenue + service */}
-      <div className="grid grid-cols-[1.55fr_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <Card>
           <CardTitle sub="บาท / วัน">รายรับ 7 วันล่าสุด</CardTitle>
           <div className="h-[210px] w-full">
@@ -175,7 +175,7 @@ export function DashboardPage() {
       </div>
 
       {/* peak + size */}
-      <div className="grid grid-cols-[1.55fr_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <Card>
           <CardTitle sub="จำนวนคัน / ชั่วโมง">ช่วงเวลาที่รถเข้าเยอะ</CardTitle>
           <div className="flex h-[130px] items-end gap-2">
@@ -234,7 +234,7 @@ export function DashboardPage() {
       </div>
 
       {/* recent + customers */}
-      <div className="grid grid-cols-[1.55fr_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <Card>
           <div className="mb-3.5 flex items-center justify-between">
             <div className="font-kanit text-[17px] font-bold text-slate-900">งานล่าสุดวันนี้</div>
