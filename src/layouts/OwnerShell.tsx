@@ -1,10 +1,11 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useShopConfig } from '@/features/reference/reference.hooks'
 import { useJobsRealtime } from '@/features/jobs/useJobsRealtime'
 import { todayLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/Spinner'
 
 interface NavDef {
   to: string
@@ -211,7 +212,15 @@ export function OwnerShell() {
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-7 lg:py-6">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24">
+                <Spinner className="h-8 w-8" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
 
         {/* แถบเมนูล่าง — เฉพาะมือถือ */}

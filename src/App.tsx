@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { RequireRole } from '@/features/auth/RequireRole'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -5,9 +6,10 @@ import { StaffShell } from '@/layouts/StaffShell'
 import { OwnerShell } from '@/layouts/OwnerShell'
 import { NewJobPage } from '@/features/jobs/NewJobPage'
 import { MyJobsPage } from '@/features/jobs/MyJobsPage'
-import { DashboardPage } from '@/features/dashboard/DashboardPage'
-import { ManagePage } from '@/features/manage/ManagePage'
-import { ExportPage } from '@/features/export/ExportPage'
+
+const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const ManagePage = lazy(() => import('@/features/manage/ManagePage').then((m) => ({ default: m.ManagePage })))
+const ExportPage = lazy(() => import('@/features/export/ExportPage').then((m) => ({ default: m.ExportPage })))
 
 export function App() {
   return (
