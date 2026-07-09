@@ -14,6 +14,7 @@ import {
 import { serviceDot } from '@/lib/constants'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
+import { ConfirmSheet } from '@/components/ConfirmSheet'
 import { cn } from '@/lib/utils'
 
 export function ManagePage() {
@@ -34,6 +35,9 @@ export function ManagePage() {
   const [initialized, setInitialized] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expandedBrands, setExpandedBrands] = useState<Record<string, boolean>>({})
+  const [pendingDelete, setPendingDelete] = useState<{ kind: 'service' | 'brand'; key: string; label: string } | null>(
+    null,
+  )
 
   useEffect(() => {
     if (initialized) return
@@ -112,11 +116,8 @@ export function ManagePage() {
   }
 
   function deleteService(id: string) {
-    if (!confirm('ยืนยันที่จะลบรายละเอียดบริการนี้? ข้อมูลราคาบริการนี้ของทุกขนาดจะถูกลบไปด้วย')) return
-    setDraftServices(draftServices.filter((s) => s.id !== id))
-    const nextPrices = { ...draftPrices }
-    delete nextPrices[id]
-    setDraftPrices(nextPrices)
+    const svc = draftServices.find((s) => s.id === id)
+    setPendingDelete({ kind: 'service', key: id, label: svc?.name_th ?? '' })
   }
 
   // --- Brand & Model functions ---
@@ -137,8 +138,20 @@ export function ManagePage() {
   }
 
   function deleteBrand(key: string) {
-    if (!confirm('ยืนยันที่จะลบยี่ห้อนี้และรุ่นทั้งหมดภายใต้ยี่ห้อนี้?')) return
-    setDraftBrands(draftBrands.filter((b) => b.tempKey !== key))
+    const brand = draftBrands.find((b) => b.tempKey === key)
+    setPendingDelete({ kind: 'brand', key, label: brand?.name_th ?? '' })
+  }
+
+  // --- Delete confirmation ---
+  function performDelete(kind: 'service' | 'brand', key: string) {
+    if (kind === 'service') {
+      setDraftServices(draftServices.filter((s) => s.id !== key))
+      const nextPrices = { ...draftPrices }
+      delete nextPrices[key]
+      setDraftPrices(nextPrices)
+    } else {
+      setDraftBrands(draftBrands.filter((b) => b.tempKey !== key))
+    }
   }
 
   function toggleBrandExpand(key: string) {
@@ -496,6 +509,14 @@ export function ManagePage() {
           บันทึกการเปลี่ยนแปลง
         </button>
       </div>
+
+      <ConfirmSheet
+        open={!!pendingDelete}
+        title={pendingDelete?.kind === 'service' ? 'ลบบริการนี้?' : 'ลบยี่ห้อนี้?'}
+        message={pendingDelete ? `"${pendingDelete.label}" จะถูกลบเมื่อกดบันทึกการเปลี่ยนแปลง` : undefined}
+        onConfirm={() => pendingDelete && performDelete(pendingDelete.kind, pendingDelete.key)}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   )
 }
