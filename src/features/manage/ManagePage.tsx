@@ -13,7 +13,7 @@ import {
 } from './manage.service'
 import { serviceDot } from '@/lib/constants'
 import { useToast } from '@/components/Toast'
-import { FullPageSpinner, Spinner } from '@/components/Spinner'
+import { Spinner } from '@/components/Spinner'
 import { cn } from '@/lib/utils'
 
 export function ManagePage() {
@@ -75,7 +75,11 @@ export function ManagePage() {
   }, [loadSizes, loadServices, loadPrices, loadBrands, loadConfig, services, sizes, priceMap, brands, shop, initialized])
 
   if (loadSizes || loadServices || loadPrices || loadBrands || loadConfig || !initialized) {
-    return <FullPageSpinner />
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Spinner className="h-8 w-8" />
+      </div>
+    )
   }
 
   function handlePriceChange(serviceId: string, size: string, value: string) {
