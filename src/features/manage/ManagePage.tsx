@@ -13,7 +13,8 @@ import {
 } from './manage.service'
 import { serviceDot } from '@/lib/constants'
 import { useToast } from '@/components/Toast'
-import { FullPageSpinner, Spinner } from '@/components/Spinner'
+import { Spinner } from '@/components/Spinner'
+import { ConfirmSheet } from '@/components/ConfirmSheet'
 import { cn } from '@/lib/utils'
 
 export function ManagePage() {
@@ -34,6 +35,9 @@ export function ManagePage() {
   const [initialized, setInitialized] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expandedBrands, setExpandedBrands] = useState<Record<string, boolean>>({})
+  const [pendingDelete, setPendingDelete] = useState<{ kind: 'service' | 'brand'; key: string; label: string } | null>(
+    null,
+  )
 
   useEffect(() => {
     if (initialized) return
@@ -75,7 +79,11 @@ export function ManagePage() {
   }, [loadSizes, loadServices, loadPrices, loadBrands, loadConfig, services, sizes, priceMap, brands, shop, initialized])
 
   if (loadSizes || loadServices || loadPrices || loadBrands || loadConfig || !initialized) {
-    return <FullPageSpinner />
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Spinner className="h-8 w-8" />
+      </div>
+    )
   }
 
   function handlePriceChange(serviceId: string, size: string, value: string) {
@@ -108,11 +116,8 @@ export function ManagePage() {
   }
 
   function deleteService(id: string) {
-    if (!confirm('ยืนยันที่จะลบรายละเอียดบริการนี้? ข้อมูลราคาบริการนี้ของทุกขนาดจะถูกลบไปด้วย')) return
-    setDraftServices(draftServices.filter((s) => s.id !== id))
-    const nextPrices = { ...draftPrices }
-    delete nextPrices[id]
-    setDraftPrices(nextPrices)
+    const svc = draftServices.find((s) => s.id === id)
+    setPendingDelete({ kind: 'service', key: id, label: svc?.name_th ?? '' })
   }
 
   // --- Brand & Model functions ---
@@ -133,8 +138,20 @@ export function ManagePage() {
   }
 
   function deleteBrand(key: string) {
-    if (!confirm('ยืนยันที่จะลบยี่ห้อนี้และรุ่นทั้งหมดภายใต้ยี่ห้อนี้?')) return
-    setDraftBrands(draftBrands.filter((b) => b.tempKey !== key))
+    const brand = draftBrands.find((b) => b.tempKey === key)
+    setPendingDelete({ kind: 'brand', key, label: brand?.name_th ?? '' })
+  }
+
+  // --- Delete confirmation ---
+  function performDelete(kind: 'service' | 'brand', key: string) {
+    if (kind === 'service') {
+      setDraftServices(draftServices.filter((s) => s.id !== key))
+      const nextPrices = { ...draftPrices }
+      delete nextPrices[key]
+      setDraftPrices(nextPrices)
+    } else {
+      setDraftBrands(draftBrands.filter((b) => b.tempKey !== key))
+    }
   }
 
   function toggleBrandExpand(key: string) {
@@ -236,7 +253,7 @@ export function ManagePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-28 pt-2">
+    <div className="flex flex-col gap-6 pb-2 pt-2 lg:pb-28">
       {/* 1. Price Matrix */}
       <PriceMatrixEditor
         services={draftServices}
@@ -258,7 +275,7 @@ export function ManagePage() {
           {draftServices.map((svc, i) => (
             <div
               key={svc.id}
-              className="flex items-center gap-3 rounded-2xl border border-slate-150 bg-slate-50 p-3.5"
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5"
             >
               <span className="h-3 w-3 flex-none rounded-sm" style={{ background: serviceDot(i) }} />
               <input
@@ -268,20 +285,20 @@ export function ManagePage() {
                 className="font-kanit min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm outline-none focus:border-sky"
               />
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">{svc.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</span>
+                <span className="hidden text-xs text-slate-400 sm:block">{svc.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</span>
                 <button
                   type="button"
                   onClick={() => toggleServiceActive(svc.id)}
                   className={cn(
-                    'relative inline-flex h-6.5 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none',
-                    svc.active ? 'bg-sky' : 'bg-slate-350',
+                    'relative inline-flex h-[26px] w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none',
+                    svc.active ? 'bg-sky' : 'bg-slate-300',
                   )}
                   style={{ backgroundColor: svc.active ? '#0EA5E9' : '#CBD5E1' }}
                 >
                   <span
                     className={cn(
-                      'pointer-events-none inline-block h-5.5 w-5.5 transform rounded-full bg-white shadow transition duration-200 ease-in-out',
-                      svc.active ? 'translate-x-4.5' : 'translate-x-0',
+                      'pointer-events-none inline-block h-[22px] w-[22px] transform rounded-full bg-white shadow transition duration-200 ease-in-out',
+                      svc.active ? 'translate-x-[18px]' : 'translate-x-0',
                     )}
                   />
                 </button>
@@ -289,7 +306,7 @@ export function ManagePage() {
               <button
                 type="button"
                 onClick={() => deleteService(svc.id)}
-                className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition active:scale-95"
+                className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition active:scale-95 lg:h-9 lg:w-9"
               >
                 🗑️
               </button>
@@ -360,15 +377,24 @@ export function ManagePage() {
                     {b.models.map((m, mIdx) => (
                       <div
                         key={mIdx}
-                        className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100"
+                        className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-white p-3 lg:flex-row lg:items-center lg:gap-3"
                       >
-                        <input
-                          value={m.name}
-                          onChange={(e) => editModelName(b.tempKey!, mIdx, e.target.value)}
-                          placeholder="ชื่อรุ่น"
-                          className="font-kanit flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-sky focus:bg-white"
-                        />
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2 lg:min-w-0 lg:flex-1">
+                          <input
+                            value={m.name}
+                            onChange={(e) => editModelName(b.tempKey!, mIdx, e.target.value)}
+                            placeholder="ชื่อรุ่น"
+                            className="font-kanit min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-sky focus:bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => deleteModel(b.tempKey!, mIdx)}
+                            className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition active:scale-95 lg:hidden"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 lg:flex lg:gap-1">
                           {sizes.map((sz) => {
                             const active = m.size_code === sz.code
                             return (
@@ -377,7 +403,7 @@ export function ManagePage() {
                                 type="button"
                                 onClick={() => editModelSize(b.tempKey!, mIdx, sz.code)}
                                 className={cn(
-                                  'font-kanit rounded-lg px-2.5 py-1 text-xs font-bold transition border',
+                                  'font-kanit min-w-0 rounded-lg px-2.5 py-2 text-center text-xs font-bold transition border lg:py-1',
                                   active
                                     ? 'bg-[#E0F2FE] text-brand-700 border-sky shadow-sm'
                                     : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300',
@@ -391,7 +417,7 @@ export function ManagePage() {
                         <button
                           type="button"
                           onClick={() => deleteModel(b.tempKey!, mIdx)}
-                          className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition"
+                          className="hidden h-8 w-8 flex-none items-center justify-center rounded-lg bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition lg:flex"
                         >
                           ✕
                         </button>
@@ -456,17 +482,41 @@ export function ManagePage() {
       </div>
 
       {/* Floating Save Bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 px-8 z-40 flex items-center justify-end">
+      <div className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 px-8 z-40 hidden items-center justify-end lg:flex">
         <button
           onClick={handleSave}
           disabled={saving}
           className="font-kanit inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-brand-700 py-3.5 text-[15px] font-bold text-white shadow-lg transition hover:bg-brand-600 active:scale-95 disabled:opacity-75"
           style={{ background: 'linear-gradient(90deg,#0EA5E9,#0284C7)' }}
         >
-          {saving && <Spinner className="h-4.5 w-4.5" />}
+          {saving && <Spinner className="h-[18px] w-[18px]" />}
           บันทึกการเปลี่ยนแปลง
         </button>
       </div>
+
+      {/* แถบบันทึก — มือถือ */}
+      <div
+        className="sticky bottom-0 z-10 -mx-4 px-4 pb-3 pt-6 lg:hidden"
+        style={{ background: 'linear-gradient(180deg,rgba(239,246,255,0),#EFF6FF 40%)' }}
+      >
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="font-kanit flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-bold text-white shadow-lg transition active:scale-[.97] disabled:opacity-75"
+          style={{ background: 'linear-gradient(90deg,#0EA5E9,#0284C7)' }}
+        >
+          {saving && <Spinner className="h-[18px] w-[18px]" />}
+          บันทึกการเปลี่ยนแปลง
+        </button>
+      </div>
+
+      <ConfirmSheet
+        open={!!pendingDelete}
+        title={pendingDelete?.kind === 'service' ? 'ลบบริการนี้?' : 'ลบยี่ห้อนี้?'}
+        message={pendingDelete ? `"${pendingDelete.label}" จะถูกลบเมื่อกดบันทึกการเปลี่ยนแปลง` : undefined}
+        onConfirm={() => pendingDelete && performDelete(pendingDelete.kind, pendingDelete.key)}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

@@ -14,7 +14,7 @@ import { PaymentBadge } from '@/components/StatusBadge'
 import { downloadCsv, type CsvValue } from '@/lib/csv'
 import { useToast } from '@/components/Toast'
 import { jobServiceText } from '@/features/jobs/jobDisplay'
-import { FullPageSpinner } from '@/components/Spinner'
+import { Spinner } from '@/components/Spinner'
 import type { JobService, Job } from '@/lib/database.types'
 
 interface JobWithServicesAndStaff extends Job {
@@ -142,7 +142,12 @@ export function ExportPage() {
 
   const previewJobs = jobs.slice(0, 10)
 
-  if (isLoading) return <FullPageSpinner />
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Spinner className="h-8 w-8" />
+      </div>
+    )
 
   return (
     <div className="flex flex-col gap-6 pt-2">
@@ -150,7 +155,7 @@ export function ExportPage() {
       <div className="rounded-[20px] border border-slate-100 bg-white p-6 shadow-card">
         <div className="font-kanit mb-4 text-lg font-bold text-slate-900">เลือกช่วงวันที่ต้องการ</div>
         <div className="flex flex-wrap items-end gap-4">
-          <div className="flex-1 min-w-[200px]">
+          <div className="min-w-[140px] flex-1 lg:min-w-[200px]">
             <label className="font-kanit mb-1.5 block text-sm font-semibold text-slate-700">
               ตั้งแต่วันที่
             </label>
@@ -161,7 +166,7 @@ export function ExportPage() {
               className="font-kanit w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 py-2 text-sm outline-none focus:border-sky focus:bg-white"
             />
           </div>
-          <div className="flex-1 min-w-[200px]">
+          <div className="min-w-[140px] flex-1 lg:min-w-[200px]">
             <label className="font-kanit mb-1.5 block text-sm font-semibold text-slate-700">
               ถึงวันที่
             </label>
@@ -172,7 +177,7 @@ export function ExportPage() {
               className="font-kanit w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 py-2 text-sm outline-none focus:border-sky focus:bg-white"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => applyPreset('today')}
               className="font-kanit rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 transition active:scale-95"
@@ -197,29 +202,29 @@ export function ExportPage() {
 
       {/* Summary Card */}
       <div
-        className="rounded-[20px] p-6 text-white shadow-card flex items-center justify-between"
+        className="flex flex-col gap-4 rounded-[20px] p-5 text-white shadow-card lg:flex-row lg:items-center lg:justify-between lg:p-6"
         style={{ background: 'linear-gradient(135deg,#0EA5E9 0%,#0284C7 60%,#0369A1 100%)' }}
       >
-        <div className="flex gap-8">
+        <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center lg:gap-8">
           <div>
             <div className="text-xs opacity-80">จำนวนรายการ (ไม่รวมยกเลิก)</div>
-            <div className="font-kanit mt-1 text-2xl font-bold">{summary.jobCount} งาน</div>
+            <div className="font-kanit mt-1 text-lg font-bold lg:text-2xl">{summary.jobCount} งาน</div>
           </div>
-          <div className="h-10 w-px bg-white/20" />
+          <div className="hidden h-10 w-px bg-white/20 lg:block" />
           <div>
             <div className="text-xs opacity-80">รายรับรวม (ชำระแล้ว)</div>
-            <div className="font-kanit mt-1 text-2xl font-bold">{baht(summary.revenue)}</div>
+            <div className="font-kanit mt-1 text-lg font-bold lg:text-2xl">{baht(summary.revenue)}</div>
           </div>
-          <div className="h-10 w-px bg-white/20" />
+          <div className="hidden h-10 w-px bg-white/20 lg:block" />
           <div>
             <div className="text-xs opacity-80">ยกเลิก (void)</div>
-            <div className="font-kanit mt-1 text-2xl font-bold text-rose-300">{summary.voidCount} งาน</div>
+            <div className="font-kanit mt-1 text-lg font-bold text-rose-300 lg:text-2xl">{summary.voidCount} งาน</div>
           </div>
         </div>
 
         <button
           onClick={handleDownload}
-          className="font-kanit rounded-xl bg-white px-5 py-3 text-sm font-bold text-brand-700 shadow-md transition hover:bg-slate-50 active:scale-95"
+          className="font-kanit flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-brand-700 shadow-md transition hover:bg-slate-50 active:scale-95 lg:w-auto"
         >
           📥 ดาวน์โหลด CSV
         </button>

@@ -1,10 +1,11 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Suspense, type ReactNode } from 'react'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useShopConfig } from '@/features/reference/reference.hooks'
 import { useJobsRealtime } from '@/features/jobs/useJobsRealtime'
 import { todayLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/Spinner'
 
 interface NavDef {
   to: string
@@ -149,8 +150,50 @@ export function OwnerShell() {
       </aside>
 
       {/* main */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-[70px] flex-none items-center justify-between border-b border-slate-200 bg-white px-4 lg:h-[84px] lg:px-7">
+      <div className="relative mx-auto flex w-full min-w-0 max-w-[480px] flex-1 flex-col lg:mx-0 lg:max-w-none">
+        {/* header มือถือ — gradient เหมือนฝั่งพนักงาน */}
+        <header
+          className="flex-none rounded-b-[26px] px-5 pb-4 text-white shadow-lg lg:hidden"
+          style={{
+            background: 'linear-gradient(180deg,#0EA5E9,#0284C7)',
+            paddingTop: 'calc(env(safe-area-inset-top,0px) + 18px)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-[12.5px] text-white/85">{shop?.shop_name || 'ร้านล้างรถ'}</div>
+              <div className="font-kanit truncate text-[21px] font-bold leading-tight">{meta.title}</div>
+            </div>
+            <div className="flex flex-none items-center gap-2">
+              <Link
+                to="/new"
+                title="เปิดงาน (พนักงาน)"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white/[.16] transition active:scale-95"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                </svg>
+              </Link>
+              <button
+                onClick={() => signOut()}
+                title="ออกจากระบบ"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white/[.16] transition active:scale-95"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <header className="hidden lg:flex h-[70px] flex-none items-center justify-between border-b border-slate-200 bg-white px-4 lg:h-[84px] lg:px-7">
           <div className="min-w-0">
             <div className="font-kanit truncate text-xl font-bold leading-tight text-slate-900 lg:text-2xl">
               {meta.title}
@@ -165,47 +208,39 @@ export function OwnerShell() {
               </svg>
               {todayLabel()}
             </div>
-            {/* ปุ่มออกจากระบบ — เฉพาะมือถือ (จอใหญ่มีใน sidebar) */}
-            <button
-              onClick={() => signOut()}
-              title="ออกจากระบบ"
-              className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-app-bg text-brand-700 lg:hidden"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 lg:px-7 lg:py-6 lg:pb-6">
-          <Outlet />
+        <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-7 lg:py-6">
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24">
+                <Spinner className="h-8 w-8" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
 
         {/* แถบเมนูล่าง — เฉพาะมือถือ */}
         <nav
-          className="flex flex-none border-t border-slate-200 bg-white px-1 pt-2 lg:hidden"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom,0px) + 14px)' }}
+          className="flex h-[78px] flex-none border-t border-slate-200 bg-white px-4 pt-2 lg:hidden"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom,0px) + 20px)' }}
         >
-          {NAV.map((n) => (
+          {NAV.filter((n) => n.to !== '/new').map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1',
+                  'flex flex-1 flex-col items-center gap-0.5 rounded-lg pt-1 transition active:scale-95',
                   isActive ? 'text-sky' : 'text-slate-400',
                 )
               }
             >
               <span className="flex h-6 w-6 items-center justify-center">{n.icon}</span>
-              <span className="font-kanit text-[10.5px] font-semibold">{n.short}</span>
+              <span className="font-kanit text-[11px] font-semibold">{n.short}</span>
             </NavLink>
           ))}
         </nav>
