@@ -48,7 +48,7 @@ function RangeSwitcher({ value, onChange }: { value: RangeKind; onChange: (v: Ra
           key={o.key}
           onClick={() => onChange(o.key)}
           className={cn(
-            'font-kanit rounded-lg px-4 py-1.5 text-[13.5px] font-semibold transition',
+            'font-kanit rounded-lg px-4 py-2.5 text-[13.5px] font-semibold transition lg:py-1.5',
             value === o.key ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500',
           )}
         >
@@ -112,7 +112,7 @@ export function DashboardPage() {
                 {k.icon}
               </div>
             </div>
-            <div className="font-kanit mt-2.5 text-[31px] font-bold leading-none text-slate-900">{k.value}</div>
+            <div className="font-kanit mt-2.5 text-[26px] font-bold leading-none text-slate-900 lg:text-[31px]">{k.value}</div>
             <div className="mt-2 flex items-center gap-1.5">
               <Delta pct={k.delta} />
               <span className="text-[12px] text-slate-400">เทียบช่วงก่อน</span>
@@ -178,7 +178,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <Card>
           <CardTitle sub="จำนวนคัน / ชั่วโมง">ช่วงเวลาที่รถเข้าเยอะ</CardTitle>
-          <div className="flex h-[130px] items-end gap-2">
+          <div className="flex h-[130px] items-end gap-1 lg:gap-2">
             {peak.map((p) => {
               const h = Math.round((p.count / peakMax) * 100)
               const strong = p.count === peakMax && peakMax > 0
@@ -240,35 +240,65 @@ export function DashboardPage() {
             <div className="font-kanit text-[17px] font-bold text-slate-900">งานล่าสุดวันนี้</div>
             <span className="text-[12.5px] font-semibold text-sky">ทั้งหมด {recent.length} งาน</span>
           </div>
-          <div className="grid grid-cols-[64px_1.4fr_1.3fr_70px_88px] gap-1 border-b border-slate-100 px-1 pb-2.5 text-[11.5px] font-semibold text-slate-400">
-            <div>เวลา</div>
-            <div>ทะเบียน</div>
-            <div>บริการ</div>
-            <div className="text-right">ยอด</div>
-            <div className="text-right">ชำระ</div>
-          </div>
-          {recent.length === 0 && <div className="py-6 text-center text-sm text-slate-400">ยังไม่มีงานวันนี้</div>}
-          {recent.map((j) => (
-            <div
-              key={j.id}
-              className="grid grid-cols-[64px_1.4fr_1.3fr_70px_88px] items-center gap-1 border-b border-slate-50 px-1 py-2.5"
-            >
-              <div className="font-kanit text-[12.5px] text-slate-500">{timeHM(j.created_at)}</div>
-              <div className="min-w-0">
-                <div className="font-kanit text-[13.5px] font-bold text-slate-900">{j.plate}</div>
-                <div className="truncate text-[11px] text-slate-400">
-                  {[j.brand, j.model].filter(Boolean).join(' ')}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-[64px_1.4fr_1.3fr_70px_88px] gap-1 border-b border-slate-100 px-1 pb-2.5 text-[11.5px] font-semibold text-slate-400">
+              <div>เวลา</div>
+              <div>ทะเบียน</div>
+              <div>บริการ</div>
+              <div className="text-right">ยอด</div>
+              <div className="text-right">ชำระ</div>
+            </div>
+            {recent.length === 0 && <div className="py-6 text-center text-sm text-slate-400">ยังไม่มีงานวันนี้</div>}
+            {recent.map((j) => (
+              <div
+                key={j.id}
+                className="grid grid-cols-[64px_1.4fr_1.3fr_70px_88px] items-center gap-1 border-b border-slate-50 px-1 py-2.5"
+              >
+                <div className="font-kanit text-[12.5px] text-slate-500">{timeHM(j.created_at)}</div>
+                <div className="min-w-0">
+                  <div className="font-kanit text-[13.5px] font-bold text-slate-900">{j.plate}</div>
+                  <div className="truncate text-[11px] text-slate-400">
+                    {[j.brand, j.model].filter(Boolean).join(' ')}
+                  </div>
+                </div>
+                <div className="truncate text-[12.5px] text-slate-600">
+                  {jobServiceText(j, services)} <span className="text-slate-400">· {j.size_code}</span>
+                </div>
+                <div className="font-kanit text-right text-[13.5px] font-bold text-slate-900">{baht(j.total)}</div>
+                <div className="flex justify-end">
+                  <PaymentBadge method={j.payment_method} />
                 </div>
               </div>
-              <div className="truncate text-[12.5px] text-slate-600">
-                {jobServiceText(j, services)} <span className="text-slate-400">· {j.size_code}</span>
+            ))}
+          </div>
+          <div className="lg:hidden">
+            {recent.length === 0 && (
+              <div className="py-10 text-center">
+                <div className="mb-1 text-3xl">🫧</div>
+                <div className="text-[13px] text-slate-400">ยังไม่มีงานในช่วงเวลานี้</div>
               </div>
-              <div className="font-kanit text-right text-[13.5px] font-bold text-slate-900">{baht(j.total)}</div>
-              <div className="flex justify-end">
-                <PaymentBadge method={j.payment_method} />
+            )}
+            {recent.map((j) => (
+              <div
+                key={j.id}
+                className="flex items-center justify-between gap-3 border-b border-slate-100 py-2.5 last:border-0"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-kanit text-[14px] font-bold text-slate-900">{j.plate}</span>
+                    <span className="text-[11px] text-slate-400">{timeHM(j.created_at)}</span>
+                  </div>
+                  <div className="truncate text-[12px] text-slate-500">
+                    {jobServiceText(j, services)} · {j.size_code}
+                  </div>
+                </div>
+                <div className="flex flex-none flex-col items-end gap-1">
+                  <span className="font-kanit text-[14px] font-bold text-slate-900">{baht(j.total)}</span>
+                  <PaymentBadge method={j.payment_method} />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </Card>
 
         <Card>
