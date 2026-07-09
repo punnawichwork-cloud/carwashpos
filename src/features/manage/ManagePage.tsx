@@ -258,7 +258,7 @@ export function ManagePage() {
           {draftServices.map((svc, i) => (
             <div
               key={svc.id}
-              className="flex items-center gap-3 rounded-2xl border border-slate-150 bg-slate-50 p-3.5"
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5"
             >
               <span className="h-3 w-3 flex-none rounded-sm" style={{ background: serviceDot(i) }} />
               <input
@@ -273,15 +273,15 @@ export function ManagePage() {
                   type="button"
                   onClick={() => toggleServiceActive(svc.id)}
                   className={cn(
-                    'relative inline-flex h-6.5 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none',
-                    svc.active ? 'bg-sky' : 'bg-slate-350',
+                    'relative inline-flex h-[26px] w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none',
+                    svc.active ? 'bg-sky' : 'bg-slate-300',
                   )}
                   style={{ backgroundColor: svc.active ? '#0EA5E9' : '#CBD5E1' }}
                 >
                   <span
                     className={cn(
-                      'pointer-events-none inline-block h-5.5 w-5.5 transform rounded-full bg-white shadow transition duration-200 ease-in-out',
-                      svc.active ? 'translate-x-4.5' : 'translate-x-0',
+                      'pointer-events-none inline-block h-[22px] w-[22px] transform rounded-full bg-white shadow transition duration-200 ease-in-out',
+                      svc.active ? 'translate-x-[18px]' : 'translate-x-0',
                     )}
                   />
                 </button>
@@ -463,7 +463,7 @@ export function ManagePage() {
           className="font-kanit inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-brand-700 py-3.5 text-[15px] font-bold text-white shadow-lg transition hover:bg-brand-600 active:scale-95 disabled:opacity-75"
           style={{ background: 'linear-gradient(90deg,#0EA5E9,#0284C7)' }}
         >
-          {saving && <Spinner className="h-4.5 w-4.5" />}
+          {saving && <Spinner className="h-[18px] w-[18px]" />}
           บันทึกการเปลี่ยนแปลง
         </button>
       </div>
