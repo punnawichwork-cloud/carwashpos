@@ -15,7 +15,13 @@ import { serviceDot } from '@/lib/constants'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
 import { ConfirmSheet } from '@/components/ConfirmSheet'
+import { BottomSheet } from '@/components/BottomSheet'
 import { cn } from '@/lib/utils'
+
+type PendingDelete =
+  | { kind: 'service'; key: string; label: string }
+  | { kind: 'brand'; key: string; label: string }
+  | { kind: 'model'; brandKey: string; idx: number; label: string }
 
 export function ManagePage() {
   const qc = useQueryClient()
@@ -35,9 +41,10 @@ export function ManagePage() {
   const [initialized, setInitialized] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expandedBrands, setExpandedBrands] = useState<Record<string, boolean>>({})
-  const [pendingDelete, setPendingDelete] = useState<{ kind: 'service' | 'brand'; key: string; label: string } | null>(
-    null,
-  )
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [brandSheet, setBrandSheet] = useState<{ mode: 'add' | 'edit'; brandKey?: string; name: string } | null>(null)
+  const [modelSheet, setModelSheet] = useState<{ brandKey: string; name: string; size: string } | null>(null)
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     if (initialized) return
@@ -76,6 +83,7 @@ export function ManagePage() {
     setPromptpayId(shop?.promptpay_id ?? '')
 
     setInitialized(true)
+    setDirty(false)
   }, [loadSizes, loadServices, loadPrices, loadBrands, loadConfig, services, sizes, priceMap, brands, shop, initialized])
 
   if (loadSizes || loadServices || loadPrices || loadBrands || loadConfig || !initialized) {
@@ -86,6 +94,10 @@ export function ManagePage() {
     )
   }
 
+  function markDirty() {
+    setDirty(true)
+  }
+
   function handlePriceChange(serviceId: string, size: string, value: string) {
     setDraftPrices((prev) => ({
       ...prev,
@@ -94,6 +106,7 @@ export function ManagePage() {
         [size]: value,
       },
     }))
+    markDirty()
   }
 
   // --- Service functions ---
@@ -105,14 +118,17 @@ export function ManagePage() {
       ...prev,
       [newId]: sizes.reduce((acc, sz) => ({ ...acc, [sz.code]: '0' }), {}),
     }))
+    markDirty()
   }
 
   function editServiceName(id: string, name: string) {
     setDraftServices(draftServices.map((s) => (s.id === id ? { ...s, name_th: name } : s)))
+    markDirty()
   }
 
   function toggleServiceActive(id: string) {
     setDraftServices(draftServices.map((s) => (s.id === id ? { ...s, active: !s.active } : s)))
+    markDirty()
   }
 
   function deleteService(id: string) {
@@ -121,20 +137,22 @@ export function ManagePage() {
   }
 
   // --- Brand & Model functions ---
-  function addBrand() {
+  function addBrand(name = 'ยี่ห้อใหม่') {
     const newKey = `brand_new_${Date.now()}`
     const newBrand: DraftBrand = {
       id: null,
       tempKey: newKey,
-      name_th: 'ยี่ห้อใหม่',
+      name_th: name,
       models: [],
     }
     setDraftBrands([...draftBrands, newBrand])
     setExpandedBrands((prev) => ({ ...prev, [newKey]: true }))
+    markDirty()
   }
 
   function editBrandName(key: string, name: string) {
     setDraftBrands(draftBrands.map((b) => (b.tempKey === key ? { ...b, name_th: name } : b)))
+    markDirty()
   }
 
   function deleteBrand(key: string) {
@@ -143,31 +161,72 @@ export function ManagePage() {
   }
 
   // --- Delete confirmation ---
-  function performDelete(kind: 'service' | 'brand', key: string) {
-    if (kind === 'service') {
-      setDraftServices(draftServices.filter((s) => s.id !== key))
+  function performDelete(del: PendingDelete) {
+    if (del.kind === 'service') {
+      setDraftServices(draftServices.filter((s) => s.id !== del.key))
       const nextPrices = { ...draftPrices }
-      delete nextPrices[key]
+      delete nextPrices[del.key]
       setDraftPrices(nextPrices)
+    } else if (del.kind === 'brand') {
+      setDraftBrands(draftBrands.filter((b) => b.tempKey !== del.key))
     } else {
-      setDraftBrands(draftBrands.filter((b) => b.tempKey !== key))
+      setDraftBrands(
+        draftBrands.map((b) => {
+          if (b.tempKey !== del.brandKey) return b
+          return { ...b, models: b.models.filter((_, i) => i !== del.idx) }
+        }),
+      )
     }
+    markDirty()
+  }
+
+  function openAddBrandSheet() {
+    setBrandSheet({ mode: 'add', name: '' })
+  }
+  function openEditBrandSheet(brandKey: string) {
+    const b = draftBrands.find((x) => x.tempKey === brandKey)
+    setBrandSheet({ mode: 'edit', brandKey, name: b?.name_th ?? '' })
+  }
+  function submitBrandSheet() {
+    if (!brandSheet) return
+    const name = brandSheet.name.trim()
+    if (!name) return
+    if (brandSheet.mode === 'add') addBrand(name)
+    else if (brandSheet.brandKey) editBrandName(brandSheet.brandKey, name)
+    setBrandSheet(null)
+  }
+  function deleteFromBrandSheet() {
+    if (!brandSheet || brandSheet.mode !== 'edit' || !brandSheet.brandKey) return
+    const key = brandSheet.brandKey
+    setBrandSheet(null)
+    deleteBrand(key)
+  }
+  function openAddModelSheet(brandKey: string) {
+    setModelSheet({ brandKey, name: '', size: sizes[0]?.code ?? 'S' })
+  }
+  function submitModelSheet() {
+    if (!modelSheet) return
+    const name = modelSheet.name.trim()
+    if (!name) return
+    addModel(modelSheet.brandKey, name, modelSheet.size)
+    setModelSheet(null)
   }
 
   function toggleBrandExpand(key: string) {
     setExpandedBrands((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
-  function addModel(brandKey: string) {
+  function addModel(brandKey: string, name = 'รุ่นใหม่', size = 'S') {
     setDraftBrands(
       draftBrands.map((b) => {
         if (b.tempKey !== brandKey) return b
         return {
           ...b,
-          models: [...b.models, { id: null, name: 'รุ่นใหม่', size_code: 'S' }],
+          models: [...b.models, { id: null, name, size_code: size }],
         }
       }),
     )
+    markDirty()
   }
 
   function editModelName(brandKey: string, modelIndex: number, name: string) {
@@ -179,6 +238,7 @@ export function ManagePage() {
         return { ...b, models: nextModels }
       }),
     )
+    markDirty()
   }
 
   function editModelSize(brandKey: string, modelIndex: number, size: string) {
@@ -190,18 +250,13 @@ export function ManagePage() {
         return { ...b, models: nextModels }
       }),
     )
+    markDirty()
   }
 
-  function deleteModel(brandKey: string, modelIndex: number) {
-    setDraftBrands(
-      draftBrands.map((b) => {
-        if (b.tempKey !== brandKey) return b
-        return {
-          ...b,
-          models: b.models.filter((_, idx) => idx !== modelIndex),
-        }
-      }),
-    )
+  function deleteModel(brandKey: string, idx: number) {
+    const brand = draftBrands.find((b) => b.tempKey === brandKey)
+    const label = brand?.models[idx]?.name?.trim() || 'รุ่นนี้'
+    setPendingDelete({ kind: 'model', brandKey, idx, label })
   }
 
   // --- Save ---
@@ -240,6 +295,7 @@ export function ManagePage() {
       await savePrices(changedPrices)
 
       toast.show('✓ บันทึกการเปลี่ยนแปลงแล้ว')
+      setDirty(false)
 
       // Invalidate ref queries so that all parts of the app are updated
       await qc.invalidateQueries({ queryKey: ['ref'] })
@@ -323,8 +379,8 @@ export function ManagePage() {
         </div>
       </div>
 
-      {/* 3. Brands & Models */}
-      <div className="rounded-[20px] border border-slate-100 bg-white p-6 shadow-card">
+      {/* 3. Brands & Models — desktop (unchanged) */}
+      <div className="hidden rounded-[20px] border border-slate-100 bg-white p-6 shadow-card lg:block">
         <div className="mb-4">
           <div className="font-kanit text-lg font-bold text-slate-900">ยี่ห้อ & รุ่นรถ</div>
           <div className="text-[12.5px] text-slate-400">ระบบจะช่วยเติมข้อมูลขนาดรถให้อัตโนมัติในฝั่งพนักงาน</div>
@@ -394,7 +450,7 @@ export function ManagePage() {
                             ✕
                           </button>
                         </div>
-                        <div className="grid grid-cols-7 gap-1 lg:flex lg:gap-1">
+                        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7 lg:flex lg:gap-1">
                           {sizes.map((sz) => {
                             const active = m.size_code === sz.code
                             return (
@@ -403,7 +459,7 @@ export function ManagePage() {
                                 type="button"
                                 onClick={() => editModelSize(b.tempKey!, mIdx, sz.code)}
                                 className={cn(
-                                  'font-kanit min-w-0 rounded-lg px-2.5 py-2 text-center text-xs font-bold transition border lg:py-1',
+                                  'font-kanit min-w-0 rounded-lg px-2 py-2 text-center text-[13px] font-bold transition border lg:px-2.5 lg:py-1 lg:text-xs',
                                   active
                                     ? 'bg-[#E0F2FE] text-brand-700 border-sky shadow-sm'
                                     : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300',
@@ -439,10 +495,122 @@ export function ManagePage() {
 
           <button
             type="button"
-            onClick={addBrand}
+            onClick={() => addBrand()}
             className="font-kanit border-2 border-dashed border-slate-300 hover:border-sky py-3 text-center text-sm font-semibold text-slate-500 hover:text-sky rounded-2xl transition"
           >
             + เพิ่มยี่ห้อรถ
+          </button>
+        </div>
+      </div>
+
+      {/* 3b. Brands & Models — mobile */}
+      <div className="rounded-[20px] border border-slate-100 bg-white p-4 shadow-card lg:hidden">
+        <div className="mb-4">
+          <div className="font-kanit text-lg font-bold text-slate-900">ยี่ห้อ &amp; รุ่นรถ</div>
+          <div className="text-[12.5px] text-slate-400">ระบบจะช่วยเติมข้อมูลขนาดรถให้อัตโนมัติในฝั่งพนักงาน</div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {draftBrands.map((b) => {
+            const isExpanded = expandedBrands[b.tempKey!]
+            return (
+              <div key={b.tempKey} className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                <div className="flex items-stretch bg-white">
+                  <button
+                    type="button"
+                    onClick={() => toggleBrandExpand(b.tempKey!)}
+                    className="flex min-h-[52px] flex-1 items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <span
+                      className="flex-none font-bold text-slate-400 transition-transform duration-200"
+                      style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >
+                      ▸
+                    </span>
+                    <span className="font-kanit min-w-0 flex-1 truncate font-bold text-slate-800">
+                      {b.name_th.trim() || 'ยังไม่ตั้งชื่อ'}
+                    </span>
+                    <span className="flex-none text-xs text-slate-400">({b.models.length} รุ่น)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditBrandSheet(b.tempKey!)}
+                    aria-label="แก้ไขยี่ห้อ"
+                    className="flex h-[52px] w-12 flex-none items-center justify-center text-slate-400 transition active:scale-95"
+                  >
+                    ✏️
+                  </button>
+                </div>
+
+                {isExpanded && (
+                  <div className="flex flex-col gap-2.5 border-t border-slate-100/80 bg-slate-50 p-4">
+                    {b.models.length === 0 && (
+                      <div className="font-kanit py-2 text-center text-[13px] text-slate-400">ยังไม่มีรุ่นในยี่ห้อนี้</div>
+                    )}
+                    {b.models.map((m, mIdx) => (
+                      <div key={mIdx} className="flex flex-col gap-2.5 rounded-xl border border-slate-100 bg-white p-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={m.name}
+                            onChange={(e) => editModelName(b.tempKey!, mIdx, e.target.value)}
+                            placeholder="ชื่อรุ่น"
+                            inputMode="text"
+                            enterKeyHint="done"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            className="font-kanit min-h-[44px] min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-sky focus:bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => deleteModel(b.tempKey!, mIdx)}
+                            aria-label="ลบรุ่น"
+                            className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition active:scale-95"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {sizes.map((sz) => {
+                            const active = m.size_code === sz.code
+                            return (
+                              <button
+                                key={sz.code}
+                                type="button"
+                                onClick={() => editModelSize(b.tempKey!, mIdx, sz.code)}
+                                className={cn(
+                                  'font-kanit flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border px-3 text-[13px] font-bold transition',
+                                  active
+                                    ? 'border-sky bg-[#E0F2FE] text-brand-700 shadow-sm'
+                                    : 'border-slate-200 bg-slate-50 text-slate-500',
+                                )}
+                              >
+                                {sz.code}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => openAddModelSheet(b.tempKey!)}
+                      className="font-kanit min-h-[44px] rounded-xl border border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-500 transition active:scale-[.98]"
+                    >
+                      + เพิ่มรุ่น
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          <button
+            type="button"
+            onClick={openAddBrandSheet}
+            className="font-kanit min-h-[48px] rounded-2xl border-2 border-dashed border-slate-300 text-sm font-semibold text-slate-500 transition active:scale-[.98]"
+          >
+            + เพิ่มยี่ห้อ
           </button>
         </div>
       </div>
@@ -459,7 +627,7 @@ export function ManagePage() {
             <label className="font-kanit mb-1.5 block text-sm font-semibold text-slate-700">ชื่อร้าน</label>
             <input
               value={shopName}
-              onChange={(e) => setShopName(e.target.value)}
+              onChange={(e) => { setShopName(e.target.value); markDirty() }}
               placeholder="เช่น ร้านล้างรถสมใจ"
               className="font-kanit w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-sky focus:bg-white"
             />
@@ -470,7 +638,7 @@ export function ManagePage() {
             </label>
             <input
               value={promptpayId}
-              onChange={(e) => setPromptpayId(e.target.value)}
+              onChange={(e) => { setPromptpayId(e.target.value); markDirty() }}
               placeholder="เช่น เบอร์มือถือ หรือ เลขบัตร ปชช."
               className="font-kanit w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-sky focus:bg-white"
             />
@@ -496,9 +664,15 @@ export function ManagePage() {
 
       {/* แถบบันทึก — มือถือ */}
       <div
-        className="sticky bottom-0 z-10 -mx-4 px-4 pb-3 pt-6 lg:hidden"
-        style={{ background: 'linear-gradient(180deg,rgba(239,246,255,0),#EFF6FF 40%)' }}
+        className="sticky bottom-0 z-10 -mx-4 px-4 pb-4 pt-10 lg:hidden"
+        style={{ background: 'linear-gradient(180deg,rgba(239,246,255,0),#EFF6FF 55%)' }}
       >
+        {dirty && (
+          <div className="font-kanit mb-2 flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-amber-600">
+            <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+            มีการเปลี่ยนแปลงที่ยังไม่บันทึก
+          </div>
+        )}
         <button
           onClick={handleSave}
           disabled={saving}
@@ -512,11 +686,102 @@ export function ManagePage() {
 
       <ConfirmSheet
         open={!!pendingDelete}
-        title={pendingDelete?.kind === 'service' ? 'ลบบริการนี้?' : 'ลบยี่ห้อนี้?'}
+        title={
+          pendingDelete?.kind === 'service'
+            ? 'ลบบริการนี้?'
+            : pendingDelete?.kind === 'brand'
+              ? 'ลบยี่ห้อนี้?'
+              : 'ลบรุ่นนี้?'
+        }
         message={pendingDelete ? `"${pendingDelete.label}" จะถูกลบเมื่อกดบันทึกการเปลี่ยนแปลง` : undefined}
-        onConfirm={() => pendingDelete && performDelete(pendingDelete.kind, pendingDelete.key)}
+        onConfirm={() => pendingDelete && performDelete(pendingDelete)}
         onClose={() => setPendingDelete(null)}
       />
+
+      <BottomSheet open={!!brandSheet} onClose={() => setBrandSheet(null)}>
+        <div className="px-1 pb-1">
+          <div className="font-kanit text-lg font-bold text-slate-900">
+            {brandSheet?.mode === 'edit' ? 'แก้ไขยี่ห้อ' : 'เพิ่มยี่ห้อใหม่'}
+          </div>
+          <input
+            value={brandSheet?.name ?? ''}
+            onChange={(e) => setBrandSheet((s) => (s ? { ...s, name: e.target.value } : s))}
+            placeholder="ชื่อยี่ห้อ เช่น Toyota"
+            inputMode="text"
+            enterKeyHint="done"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && submitBrandSheet()}
+            className="font-kanit mt-4 min-h-[48px] w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 text-[15px] outline-none focus:border-sky focus:bg-white"
+          />
+          <button
+            type="button"
+            onClick={submitBrandSheet}
+            disabled={!brandSheet?.name.trim()}
+            className="font-kanit mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl text-[15px] font-bold text-white shadow-lg transition active:scale-[.98] disabled:opacity-40"
+            style={{ background: 'linear-gradient(90deg,#0EA5E9,#0284C7)' }}
+          >
+            {brandSheet?.mode === 'edit' ? 'บันทึกชื่อ' : 'เพิ่มยี่ห้อ'}
+          </button>
+          {brandSheet?.mode === 'edit' && (
+            <button
+              type="button"
+              onClick={deleteFromBrandSheet}
+              className="font-kanit mt-2.5 min-h-[44px] w-full rounded-xl text-[14px] font-semibold text-rose-500 transition active:scale-[.98]"
+            >
+              ลบยี่ห้อนี้
+            </button>
+          )}
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={!!modelSheet} onClose={() => setModelSheet(null)}>
+        <div className="px-1 pb-1">
+          <div className="font-kanit text-lg font-bold text-slate-900">เพิ่มรุ่นรถ</div>
+          <input
+            value={modelSheet?.name ?? ''}
+            onChange={(e) => setModelSheet((s) => (s ? { ...s, name: e.target.value } : s))}
+            placeholder="ชื่อรุ่น เช่น Yaris"
+            inputMode="text"
+            enterKeyHint="done"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoFocus
+            className="font-kanit mt-4 min-h-[48px] w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 text-[15px] outline-none focus:border-sky focus:bg-white"
+          />
+          <div className="font-kanit mb-1.5 mt-4 text-sm font-semibold text-slate-700">ขนาดรถ</div>
+          <div className="flex flex-wrap gap-1.5">
+            {sizes.map((sz) => {
+              const active = modelSheet?.size === sz.code
+              return (
+                <button
+                  key={sz.code}
+                  type="button"
+                  onClick={() => setModelSheet((s) => (s ? { ...s, size: sz.code } : s))}
+                  className={cn(
+                    'font-kanit flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border px-3 text-[13px] font-bold transition',
+                    active
+                      ? 'border-sky bg-[#E0F2FE] text-brand-700 shadow-sm'
+                      : 'border-slate-200 bg-slate-50 text-slate-500',
+                  )}
+                >
+                  {sz.code}
+                </button>
+              )
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={submitModelSheet}
+            disabled={!modelSheet?.name.trim()}
+            className="font-kanit mt-5 flex min-h-[48px] w-full items-center justify-center rounded-xl text-[15px] font-bold text-white shadow-lg transition active:scale-[.98] disabled:opacity-40"
+            style={{ background: 'linear-gradient(90deg,#0EA5E9,#0284C7)' }}
+          >
+            เพิ่มรุ่น
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }
